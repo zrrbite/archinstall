@@ -557,6 +557,16 @@ git clone git@github.com:username/repo.git
 git clone https://github.com/username/repo.git
 ```
 
+**Switch existing repo from HTTPS to SSH:**
+
+```bash
+# Check current remote
+git remote -v
+
+# Update to SSH
+git remote set-url origin git@github.com:username/repo.git
+```
+
 **Auto-start SSH agent:** Add to `~/.bashrc`:
 
 ```bash
