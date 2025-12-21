@@ -839,11 +839,33 @@ yay -S zoom
 ## Part 13: Other Useful Packages
 
 ```bash
-sudo pacman -S firefox thunar
+sudo pacman -S firefox thunar discord
 ```
 
 - `firefox` — web browser
 - `thunar` — file manager
+- `discord` — voice/text chat
+
+### Discord on Wayland
+
+Discord is an Electron app and needs flags for native Wayland support. Create a desktop entry override:
+
+```bash
+mkdir -p ~/.local/share/applications
+cat > ~/.local/share/applications/discord.desktop << 'EOF'
+[Desktop Entry]
+Name=Discord
+StartupWMClass=discord
+Comment=All-in-one voice and text chat for gamers
+GenericName=Internet Messenger
+Exec=/usr/bin/discord --enable-features=UseOzonePlatform --ozone-platform=wayland
+Icon=discord
+Type=Application
+Categories=Network;InstantMessaging;
+EOF
+```
+
+This makes Discord run natively on Wayland instead of through XWayland.
 
 ---
 
