@@ -1,10 +1,44 @@
-# Arch Linux + Hyprland Setup Guide (VirtualBox)
+# Arch Linux + Hyprland Setup Guide
 
-A complete guide for setting up Arch Linux with Hyprland compositor in VirtualBox.
+A complete guide for setting up Arch Linux with Hyprland compositor.
 
 ---
 
-## Part 1: VirtualBox VM Setup
+## Part 1: Preparing Installation Media
+
+Download the Arch ISO from https://archlinux.org/download/
+
+### Option A: Bootable USB (Bare Metal)
+
+Use [Rufus](https://rufus.ie/) on Windows to create a bootable USB drive:
+
+1. Download and run Rufus
+2. Insert a USB drive (4GB+ recommended)
+3. Select your USB drive under "Device"
+4. Click "SELECT" and choose the Arch ISO
+5. Partition scheme: **GPT** (for UEFI) or **MBR** (for legacy BIOS)
+6. File system: **FAT32**
+7. Click "START"
+8. When prompted, select "Write in ISO Image mode"
+9. Wait for completion
+
+**On Linux**, you can use `dd`:
+
+```bash
+sudo dd bs=4M if=archlinux-*.iso of=/dev/sdX status=progress oflag=sync
+```
+
+Replace `/dev/sdX` with your USB device (check with `lsblk`). **Warning:** This will erase the USB drive.
+
+Boot from the USB:
+1. Insert USB into target machine
+2. Enter BIOS/UEFI (usually F2, F12, Del, or Esc during boot)
+3. Set USB as first boot device, or use boot menu
+4. Save and reboot
+
+### Option B: VirtualBox VM (Testing/Learning)
+
+VirtualBox is useful for testing or learning before committing to bare metal.
 
 1. Create new VM:
    - Name: Arch
@@ -29,6 +63,8 @@ A complete guide for setting up Arch Linux with Hyprland compositor in VirtualBo
    - Click disk icon → Choose your Arch ISO
 
 6. Boot the VM
+
+> **Note:** VirtualBox-specific steps are marked with **(VirtualBox)** throughout this guide. Skip these on bare metal.
 
 ---
 
@@ -108,6 +144,8 @@ See `~/dotfiles/README.md` for key bindings (`Super + F1` shows all) and how to 
 
 ## Part 4: Install Hyprland and Desktop Environment
 
+> **Bare Metal:** Install GPU drivers first! See [Bare Metal Differences](#bare-metal-differences) for AMD/NVIDIA/Intel driver setup.
+
 ### Core packages
 
 ```bash
@@ -132,12 +170,14 @@ sudo pacman -S xdg-desktop-portal-wlr polkit
 sudo pacman -S ttf-font-awesome otf-font-awesome ttf-nerd-fonts-symbols
 ```
 
-### VirtualBox guest additions
+### VirtualBox guest additions (VirtualBox only)
 
 ```bash
 sudo pacman -S virtualbox-guest-utils
 sudo systemctl enable --now vboxservice
 ```
+
+Skip this on bare metal.
 
 ### Clipboard support
 
@@ -178,7 +218,7 @@ nano ~/.config/hypr/hyprland.conf
 ```
 
 ```ini
-# Monitor config for VirtualBox
+# Monitor config (VirtualBox example - see "Bare Metal Differences" for real hardware)
 monitor = Virtual-1, 1920x1080@60, 0x0, 1
 
 # Variables
@@ -190,7 +230,7 @@ $mainMod = SUPER
 exec-once = hyprpaper
 exec-once = waybar
 
-# Environment for VirtualBox
+# Environment for VirtualBox (remove on bare metal, except NVIDIA may need WLR_NO_HARDWARE_CURSORS)
 env = WLR_NO_HARDWARE_CURSORS,1
 env = WLR_RENDERER_ALLOW_SOFTWARE,1
 
@@ -256,6 +296,7 @@ Add at the end:
 
 ```bash
 if [ -z "$DISPLAY" ] && [ "$XDG_VTNR" = 1 ]; then
+    # VirtualBox only - remove these two lines on bare metal (except NVIDIA may need the first)
     export WLR_NO_HARDWARE_CURSORS=1
     export WLR_RENDERER_ALLOW_SOFTWARE=1
     exec Hyprland
@@ -825,7 +866,9 @@ Start: `nvim` or `nvim filename`
 
 ---
 
-## VirtualBox Tips
+## VirtualBox Tips (VirtualBox only)
+
+Skip this section on bare metal.
 
 **Enable clipboard sharing:**
 - Devices → Shared Clipboard → Bidirectional
@@ -879,7 +922,7 @@ sudo pacman -S \
     hyprland foot wofi waybar hyprpaper \
     xdg-desktop-portal-wlr polkit \
     ttf-font-awesome otf-font-awesome ttf-nerd-fonts-symbols ttf-jetbrains-mono-nerd \
-    virtualbox-guest-utils wl-clipboard \
+    wl-clipboard \
     pipewire pipewire-pulse wireplumber pamixer pavucontrol \
     git base-devel cmake make neovim tmux nodejs npm starship \
     llvm clang clang-tools-extra \
@@ -887,6 +930,10 @@ sudo pacman -S \
 
 # Enable audio (run as your user, not root)
 systemctl --user enable --now pipewire pipewire-pulse wireplumber
+
+# VirtualBox only
+sudo pacman -S virtualbox-guest-utils
+sudo systemctl enable --now vboxservice
 
 # Claude Code
 npm install -g @anthropic-ai/claude-code
