@@ -501,10 +501,70 @@ git config --global user.name "Your Name"
 git config --global user.email "your@email.com"
 git config --global init.defaultBranch main
 git config --global core.editor nvim
-git config --global credential.helper cache
 ```
 
 View config with `git config --global --list` or edit directly at `~/.gitconfig`.
+
+### GitHub SSH setup (recommended)
+
+SSH keys are more convenient than tokens — no password prompts for push/pull.
+
+```bash
+sudo pacman -S openssh
+```
+
+Generate an SSH key:
+
+```bash
+ssh-keygen -t ed25519 -C "your@email.com"
+```
+
+Press Enter to accept the default location (`~/.ssh/id_ed25519`). Optionally set a passphrase.
+
+Start the SSH agent and add your key:
+
+```bash
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_ed25519
+```
+
+Copy your public key:
+
+```bash
+cat ~/.ssh/id_ed25519.pub
+```
+
+Add the key to GitHub:
+1. Go to https://github.com/settings/keys
+2. Click "New SSH key"
+3. Paste your public key and save
+
+Test the connection:
+
+```bash
+ssh -T git@github.com
+```
+
+You should see: "Hi username! You've successfully authenticated..."
+
+**Using SSH URLs:** Clone repos with SSH URLs instead of HTTPS:
+
+```bash
+# SSH (recommended)
+git clone git@github.com:username/repo.git
+
+# Instead of HTTPS
+git clone https://github.com/username/repo.git
+```
+
+**Auto-start SSH agent:** Add to `~/.bashrc`:
+
+```bash
+if [ -z "$SSH_AUTH_SOCK" ]; then
+    eval "$(ssh-agent -s)" > /dev/null
+    ssh-add ~/.ssh/id_ed25519 2> /dev/null
+fi
+```
 
 ### Starship prompt (git branch, status, etc.)
 
