@@ -57,6 +57,8 @@ Complete the installation and reboot.
 
 ## Part 3: Post-Install Setup
 
+> **Quick Setup Alternative:** If you want a pre-configured Nord-themed Hyprland environment instead of manual configuration, see [Using Dotfiles](#using-dotfiles) after completing the post-install network setup. The dotfiles repo automates Parts 4-9 with tested configs.
+
 ### If you have no network after reboot
 
 ```bash
@@ -73,6 +75,34 @@ EOF
 
 sudo systemctl restart systemd-networkd
 ```
+
+---
+
+## Using Dotfiles
+
+For a quick, pre-configured setup instead of manual configuration, use the [dotfiles repo](https://github.com/zrrbite/dotfiles):
+
+```bash
+git clone https://github.com/zrrbite/dotfiles.git ~/dotfiles
+cd ~/dotfiles && ./install.sh
+```
+
+This installs all packages and symlinks configs for:
+- **Hyprland** + hyprpaper + hyprlock + cliphist
+- **Foot** terminal (Nord theme, transparency)
+- **Waybar** status bar (Nord theme)
+- **Rofi** app launcher (replaces wofi)
+- **Mako** notifications
+- **Starship** prompt
+- **Neovim** IDE setup (LSP, treesitter)
+- **Git** config with aliases
+- Audio via pipewire
+
+After install, log out and select Hyprland as your session.
+
+See `~/dotfiles/README.md` for key bindings (`Super + F1` shows all) and how to manage configs with GNU Stow.
+
+> **Note:** If you prefer manual control or want to understand each component, continue with the sections below. The dotfiles can also serve as reference configs.
 
 ---
 
@@ -137,6 +167,8 @@ bind = , XF86AudioMute, exec, pamixer -t
 ---
 
 ## Part 5: Hyprland Configuration
+
+> **Reference:** See `~/dotfiles/hypr/` for a complete Nord-themed Hyprland config with hyprlock and clipboard history.
 
 ### ~/.config/hypr/hyprland.conf
 
@@ -233,6 +265,8 @@ fi
 ---
 
 ## Part 6: Foot Terminal Configuration
+
+> **Reference:** See `~/dotfiles/foot/` for a Nord-themed foot config with transparency and padding.
 
 ### ~/.config/foot/foot.ini
 
@@ -370,6 +404,8 @@ Replace `YOURUSERNAME` with your actual username and `Virtual-1` with your monit
 
 ## Part 9: Waybar Configuration
 
+> **Reference:** See `~/dotfiles/waybar/` for a complete Nord-themed waybar with workspaces, clock, and system info.
+
 The default waybar config may not show Hyprland workspaces. Create a custom config:
 
 ```bash
@@ -408,6 +444,8 @@ pkill waybar; waybar &
 ---
 
 ## Part 10: Development Tools
+
+> **Reference:** The dotfiles repo includes configs for git (with extensive aliases), neovim (LSP + treesitter), starship prompt, and clang-format/clang-tidy. See `~/dotfiles/README.md` for the full list.
 
 ### Essential packages
 
