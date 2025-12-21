@@ -284,6 +284,32 @@ bind = $mainMod, mouse_down, workspace, e+1
 bind = $mainMod, mouse_up, workspace, e-1
 ```
 
+### Workspace presets
+
+Launch apps on specific workspaces at startup:
+
+```ini
+# In hyprland.conf under AUTOSTART
+exec-once = [workspace 1] foot
+exec-once = [workspace 2] firefox
+exec-once = [workspace 3] discord
+exec-once = [workspace 3] foot -e btop   # tiled alongside discord
+```
+
+Assign apps to always open on specific workspaces:
+
+```ini
+# In hyprland.conf under WINDOWS AND WORKSPACES
+windowrulev2 = workspace 2, class:^(firefox)$
+windowrulev2 = workspace 3, class:^(discord)$
+```
+
+Find window class names with:
+
+```bash
+hyprctl clients | grep class
+```
+
 ### Auto-start Hyprland on login
 
 Edit `~/.bash_profile`:
