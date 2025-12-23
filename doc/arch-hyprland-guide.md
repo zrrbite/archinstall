@@ -666,6 +666,13 @@ yay -S p4 p4v
 - `p4` — command-line client
 - `p4v` — visual client (GUI)
 
+**Fix p4v symlink errors:** If you get permission errors on first run:
+
+```bash
+sudo ln -sf /usr/lib/libssl.so /usr/share/p4v/lib/libssl.so
+sudo ln -sf /usr/lib/libcrypto.so /usr/share/p4v/lib/libcrypto.so
+```
+
 Configure your workspace:
 
 ```bash
