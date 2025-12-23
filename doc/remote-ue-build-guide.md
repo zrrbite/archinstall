@@ -2,6 +2,17 @@
 
 Cross-compile Unreal Engine for Linux on a Windows workstation, run the editor natively on Arch Linux.
 
+## TODO - Pick up here
+
+- [ ] Part 1: Enable SSH on Windows (PowerShell as Admin)
+- [ ] Part 2: Test SSH from Arch
+- [ ] Part 3: Set up VS Code Remote-SSH
+- [ ] Part 4: Install cross-compile toolchain on Windows
+- [ ] Part 5: Cross-compile UE for Linux
+- [ ] Part 6: Sync binaries to Arch
+- [ ] Part 7: Run Linux UE Editor
+- [ ] Part 8: Set up debugging
+
 ```
 [Arch NUC]                         [Windows Workstation]
     │                                     │
