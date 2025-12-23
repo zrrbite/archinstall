@@ -492,11 +492,26 @@ nano ~/.config/hypr/hyprpaper.conf
 
 ```
 preload = /home/YOURUSERNAME/Pictures/wallpaper.jpg
-wallpaper = Virtual-1,/home/YOURUSERNAME/Pictures/wallpaper.jpg
+wallpaper = ,/home/YOURUSERNAME/Pictures/wallpaper.jpg
 splash = false
 ```
 
-Replace `YOURUSERNAME` with your actual username and `Virtual-1` with your monitor name from `hyprctl monitors`.
+Replace `YOURUSERNAME` with your actual username. The empty monitor name `,` auto-detects your display.
+
+### Reload hyprpaper
+
+After changing the config:
+
+```bash
+pkill hyprpaper && hyprpaper &
+```
+
+Or change wallpaper on the fly without editing the config:
+
+```bash
+hyprctl hyprpaper preload "/path/to/image.jpg"
+hyprctl hyprpaper wallpaper ",/path/to/image.jpg"
+```
 
 ---
 
