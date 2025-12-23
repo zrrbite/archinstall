@@ -124,7 +124,7 @@ cd ~/dotfiles && ./install.sh
 ```
 
 This installs all packages and symlinks configs for:
-- **Hyprland** + hyprpaper + hyprlock + cliphist
+- **Hyprland** + hyprpaper + hyprlock + hypridle + cliphist
 - **Foot** terminal (Nord theme, transparency)
 - **Waybar** status bar (Nord theme)
 - **Rofi** app launcher (replaces wofi)
@@ -149,7 +149,7 @@ See `~/dotfiles/README.md` for key bindings (`Super + F1` shows all) and how to 
 ### Core packages
 
 ```bash
-sudo pacman -S hyprland foot wofi waybar hyprpaper
+sudo pacman -S hyprland foot wofi waybar hyprpaper hypridle hyprlock brightnessctl
 ```
 
 - `hyprland` — Wayland compositor
@@ -157,6 +157,9 @@ sudo pacman -S hyprland foot wofi waybar hyprpaper
 - `wofi` — application launcher
 - `waybar` — status bar
 - `hyprpaper` — wallpaper manager
+- `hypridle` — idle daemon (screensaver/lock triggers)
+- `hyprlock` — screen locker
+- `brightnessctl` — screen brightness control
 
 ### Portal and permissions
 
@@ -313,6 +316,50 @@ bindm = $mainMod, mouse:273, resizewindow
 # Scroll through workspaces
 bind = $mainMod, mouse_down, workspace, e+1
 bind = $mainMod, mouse_up, workspace, e-1
+```
+
+### Idle/screensaver with hypridle
+
+Create `~/.config/hypr/hypridle.conf`:
+
+```ini
+general {
+    lock_cmd = pidof hyprlock || hyprlock
+    before_sleep_cmd = loginctl lock-session
+    after_sleep_cmd = hyprctl dispatch dpms on
+}
+
+# Dim screen after 5 minutes
+listener {
+    timeout = 300
+    on-timeout = brightnessctl -s set 10
+    on-resume = brightnessctl -r
+}
+
+# Lock screen after 5 minutes
+listener {
+    timeout = 300
+    on-timeout = loginctl lock-session
+}
+
+# Turn off display after 15 minutes
+listener {
+    timeout = 900
+    on-timeout = hyprctl dispatch dpms off
+    on-resume = hyprctl dispatch dpms on
+}
+
+# Suspend after 30 minutes
+listener {
+    timeout = 1800
+    on-timeout = systemctl suspend
+}
+```
+
+Add to autostart in `hyprland.conf`:
+
+```ini
+exec-once = hypridle
 ```
 
 ### Workspace presets
