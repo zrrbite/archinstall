@@ -584,6 +584,8 @@ Update the `[user]` section:
 
 The config includes useful aliases like `git st`, `git lg`, `git up`, and more. View all aliases with `git la`.
 
+The file also has commented-out examples for Windows (KDiff3, VS Code, wincred), macOS, and P4Merge at the bottom.
+
 ### GitHub SSH setup (recommended)
 
 SSH keys are more convenient than tokens — no password prompts for push/pull.
