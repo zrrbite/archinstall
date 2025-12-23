@@ -568,14 +568,21 @@ sudo pacman -S git base-devel cmake make neovim tmux
 
 ### Git configuration
 
+The dotfiles include a comprehensive `.gitconfig` with aliases and settings. After running `install.sh`, edit your name and email:
+
 ```bash
-git config --global user.name "Your Name"
-git config --global user.email "your@email.com"
-git config --global init.defaultBranch main
-git config --global core.editor nvim
+nano ~/dotfiles/git/.gitconfig
 ```
 
-View config with `git config --global --list` or edit directly at `~/.gitconfig`.
+Update the `[user]` section:
+
+```ini
+[user]
+    name = Your Name
+    email = your@email.com
+```
+
+The config includes useful aliases like `git st`, `git lg`, `git up`, and more. View all aliases with `git la`.
 
 ### GitHub SSH setup (recommended)
 
