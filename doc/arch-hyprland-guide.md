@@ -815,12 +815,12 @@ This creates `.vscode/` folder and `compile_commands.json` for clangd.
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Build UE Editor",
+            "label": "Build UE Editor (Development)",
             "type": "shell",
             "command": "./Engine/Build/BatchFiles/Linux/Build.sh",
             "args": [
                 "UnrealEditor",
-                "Linux", 
+                "Linux",
                 "Development",
                 "-Progress"
             ],
@@ -828,13 +828,42 @@ This creates `.vscode/` folder and `compile_commands.json` for clangd.
                 "kind": "build",
                 "isDefault": true
             },
+            "problemMatcher": "$gcc",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Build UE Editor (Debug)",
+            "type": "shell",
+            "command": "./Engine/Build/BatchFiles/Linux/Build.sh",
+            "args": [
+                "UnrealEditor",
+                "Linux",
+                "Debug",
+                "-Progress"
+            ],
+            "group": "build",
             "problemMatcher": "$gcc"
+        },
+        {
+            "label": "Generate Project Files",
+            "type": "shell",
+            "command": "./GenerateProjectFiles.sh",
+            "args": ["-vscode"],
+            "group": "build",
+            "problemMatcher": []
         }
     ]
 }
 ```
 
-Build with `Ctrl + Shift + B`.
+**Build configurations:**
+- `Development` - for regular development (recommended, default)
+- `Debug` - with full debug symbols (slower, much larger)
+
+Build with `Ctrl + Shift + B` or open command palette (`Ctrl + Shift + P`) → "Tasks: Run Task".
 
 ### VS Code debugging
 
