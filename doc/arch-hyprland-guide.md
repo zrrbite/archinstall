@@ -648,6 +648,34 @@ if [ -z "$SSH_AUTH_SOCK" ]; then
 fi
 ```
 
+### Perforce (P4)
+
+```bash
+yay -S p4 p4v
+```
+
+- `p4` — command-line client
+- `p4v` — visual client (GUI)
+
+Configure your workspace:
+
+```bash
+p4 set P4PORT=your-server:1666
+p4 set P4USER=your-username
+p4 set P4CLIENT=your-workspace-name
+```
+
+Common commands:
+
+```bash
+p4 sync           # Get latest
+p4 edit file      # Check out for edit
+p4 add file       # Mark new file for add
+p4 submit         # Submit changelist
+p4 revert file    # Revert changes
+p4 changes -m 10  # Recent changelists
+```
+
 ### Starship prompt (git branch, status, etc.)
 
 ```bash
