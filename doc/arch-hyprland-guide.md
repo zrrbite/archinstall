@@ -204,6 +204,37 @@ bind = , XF86AudioLowerVolume, exec, pamixer -d 5
 bind = , XF86AudioMute, exec, pamixer -t
 ```
 
+### Bluetooth
+
+```bash
+sudo pacman -S bluez bluez-utils blueman
+sudo systemctl enable --now bluetooth
+```
+
+Pair devices using `bluetoothctl`:
+
+```bash
+bluetoothctl
+```
+
+In the interactive prompt:
+
+```
+power on
+agent on
+default-agent
+scan on
+# Wait for device to appear: [NEW] Device AA:BB:CC:DD:EE:FF DeviceName
+pair AA:BB:CC:DD:EE:FF
+trust AA:BB:CC:DD:EE:FF
+connect AA:BB:CC:DD:EE:FF
+exit
+```
+
+Replace `AA:BB:CC:DD:EE:FF` with your device's address.
+
+For a GUI, run `blueman-manager`.
+
 ---
 
 ## Part 5: Hyprland Configuration
