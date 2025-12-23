@@ -935,6 +935,12 @@ Launch with `google-chrome-stable` or find it in wofi.
 yay -S zoom
 ```
 
+### Install Slack
+
+```bash
+yay -S slack-desktop
+```
+
 ---
 
 ## Part 13: Other Useful Packages
