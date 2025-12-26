@@ -149,7 +149,7 @@ See `~/dotfiles/README.md` for key bindings (`Super + F1` shows all) and how to 
 ### Core packages
 
 ```bash
-sudo pacman -S hyprland foot wofi waybar hyprpaper hypridle hyprlock brightnessctl
+sudo pacman -S hyprland foot wofi waybar hyprpaper hypridle hyprlock brightnessctl asciiquarium
 ```
 
 - `hyprland` — Wayland compositor
@@ -160,6 +160,7 @@ sudo pacman -S hyprland foot wofi waybar hyprpaper hypridle hyprlock brightnessc
 - `hypridle` — idle daemon (screensaver/lock triggers)
 - `hyprlock` — screen locker
 - `brightnessctl` — screen brightness control
+- `asciiquarium` — ASCII art aquarium screensaver
 
 ### Portal and permissions
 
@@ -329,17 +330,24 @@ general {
     after_sleep_cmd = hyprctl dispatch dpms on
 }
 
-# Dim screen after 5 minutes
+# Dim screen after 4 minutes
 listener {
-    timeout = 300
+    timeout = 240
     on-timeout = brightnessctl -s set 10
     on-resume = brightnessctl -r
 }
 
-# Lock screen after 5 minutes
+# Screensaver (asciiquarium) after 4 minutes
+listener {
+    timeout = 240
+    on-timeout = foot --fullscreen --title=screensaver asciiquarium
+    on-resume = pkill -f "foot.*screensaver"
+}
+
+# Lock screen after 5 minutes (kills screensaver first)
 listener {
     timeout = 300
-    on-timeout = loginctl lock-session
+    on-timeout = pkill -f "foot.*screensaver"; loginctl lock-session
 }
 
 # Turn off display after 15 minutes
@@ -354,6 +362,12 @@ listener {
     timeout = 1800
     on-timeout = systemctl suspend
 }
+```
+
+Install asciiquarium for the screensaver:
+
+```bash
+sudo pacman -S asciiquarium
 ```
 
 Add to autostart in `hyprland.conf`:
