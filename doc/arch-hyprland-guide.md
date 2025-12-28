@@ -189,6 +189,34 @@ Skip this on bare metal.
 sudo pacman -S wl-clipboard
 ```
 
+### Screenshots and screen recording
+
+```bash
+sudo pacman -S grim slurp wf-recorder
+```
+
+- `grim` — screenshot tool
+- `slurp` — region selection
+- `wf-recorder` — screen recording
+
+Add keybindings to `hyprland.conf`:
+
+```ini
+# Screenshots
+bind = , Print, exec, grim ~/Pictures/Screenshots/$(date +%Y%m%d_%H%M%S).png
+bind = $mainMod SHIFT, S, exec, grim -g "$(slurp)" ~/Pictures/Screenshots/$(date +%Y%m%d_%H%M%S).png
+
+# Screen recording
+bind = $mainMod SHIFT, R, exec, wf-recorder -f ~/Videos/recording_$(date +%Y%m%d_%H%M%S).mp4
+bind = $mainMod SHIFT, BackSpace, exec, pkill -INT wf-recorder
+```
+
+Create the directories:
+
+```bash
+mkdir -p ~/Pictures/Screenshots ~/Videos
+```
+
 ### Audio
 
 ```bash
