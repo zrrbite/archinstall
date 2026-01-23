@@ -1,0 +1,20 @@
+# Build artifacts
+build/
+*.o
+*.a
+
+# Large data files (generate locally)
+*.mbtiles
+*.tileset
+*.tileset-gpu
+*.tileset-skia
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
