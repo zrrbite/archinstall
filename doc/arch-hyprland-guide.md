@@ -1125,6 +1125,12 @@ This makes Discord run natively on Wayland instead of through XWayland.
 | `Super + Scroll` | Cycle workspaces |
 | `Super + Left drag` | Move window |
 | `Super + Right drag` | Resize window |
+| `Super + B` | Preselect below (next window opens underneath) |
+| `Super + N` | Preselect right (next window opens beside) |
+| `Super + G` | Toggle window group (tabbed stacking) |
+| `Super + Shift + Arrow` | Move window into group in that direction |
+| `Super + Tab` | Next tab in group |
+| `Super + Shift + Tab` | Previous tab in group |
 
 ---
 
