@@ -8,6 +8,8 @@ A complete guide for setting up Arch Linux with Hyprland compositor.
 
 Download the Arch ISO from https://archlinux.org/download/
 
+Optionally verify the download against the checksums on the same page. On Windows, run `Get-FileHash archlinux-*.iso` in PowerShell and compare with the SHA256 listed there. On an existing Arch system, download the ISO's `.sig` file and run `pacman-key -v archlinux-*.iso.sig`.
+
 ### Option A: Bootable USB (Bare Metal)
 
 Use [Rufus](https://rufus.ie/) on Windows to create a bootable USB drive:
@@ -19,13 +21,15 @@ Use [Rufus](https://rufus.ie/) on Windows to create a bootable USB drive:
 5. Partition scheme: **GPT** (for UEFI) or **MBR** (for legacy BIOS)
 6. File system: **FAT32**
 7. Click "START"
-8. When prompted, select "Write in ISO Image mode"
+8. When prompted, select "Write in ISO Image mode" (the default)
 9. Wait for completion
+
+If the USB doesn't boot, redo it in DD mode: set Partition scheme to **GPT**, click "START", and pick **DD Image mode** in the prompt.
 
 **On Linux**, you can use `dd`:
 
 ```bash
-sudo dd bs=4M if=archlinux-*.iso of=/dev/sdX status=progress oflag=sync
+sudo dd bs=4M if=archlinux-*.iso of=/dev/sdX conv=fsync oflag=direct status=progress
 ```
 
 Replace `/dev/sdX` with your USB device (check with `lsblk`). **Warning:** This will erase the USB drive.
@@ -33,8 +37,9 @@ Replace `/dev/sdX` with your USB device (check with `lsblk`). **Warning:** This 
 Boot from the USB:
 1. Insert USB into target machine
 2. Enter BIOS/UEFI (usually F2, F12, Del, or Esc during boot)
-3. Set USB as first boot device, or use boot menu
-4. Save and reboot
+3. **Disable Secure Boot.** The Arch ISO doesn't support it and won't boot with it on. You can set up Secure Boot after the install if you want it
+4. Set USB as first boot device, or use boot menu
+5. Save and reboot
 
 ### Option B: VirtualBox VM (Testing/Learning)
 
@@ -70,7 +75,27 @@ VirtualBox is useful for testing or learning before committing to bare metal.
 
 ## Part 2: Arch Installation
 
-### Verify network in live ISO
+### Connect to the network in the live ISO
+
+Wired connections (and VirtualBox NAT) come up automatically. For Wi-Fi, connect with `iwctl`:
+
+```bash
+iwctl
+```
+
+In the interactive prompt:
+
+```
+device list                       # find your adapter, usually wlan0
+station wlan0 scan
+station wlan0 get-networks
+station wlan0 connect "Your SSID" # prompts for the password
+exit
+```
+
+If `device list` shows the adapter as powered off or blocked, run `rfkill unblock wifi` and try again.
+
+Verify:
 
 ```bash
 ip a
@@ -85,7 +110,9 @@ archinstall
 
 **Critical settings in archinstall:**
 - **Network configuration**: Select **Use Network Manager (default backend)** (important!)
+- **Authentication → User account**: Add a user and answer **yes** to "superuser (sudo)". The rest of the guide uses `sudo`, and Hyprland must not run as root
 - **Mirrors and repositories → Optional repositories**: Enable **multilib** (needed for `lib32-*` packages such as the 32-bit Vulkan loader)
+- **Profile**: **Minimal**, since this guide installs the desktop itself. archinstall's own Hyprland profile also works, but by default it adds the SDDM login manager, which takes over from the TTY auto-start in Part 5, plus its own app picks (kitty, dolphin, dunst)
 - Everything else to your preference
 
 Complete the installation and reboot.
@@ -96,11 +123,29 @@ Complete the installation and reboot.
 
 > **Quick Setup Alternative:** If you want a pre-configured Nord-themed Hyprland environment instead of manual configuration, see [Using Dotfiles](#using-dotfiles) after completing the post-install network setup. The dotfiles repo automates Parts 4-9 with tested configs.
 
-### If you have no network after reboot
+### Network after reboot
+
+Wired connections come up on their own. **Wi-Fi does not**: archinstall doesn't carry the password you gave `iwctl` over to the installed system. Connect again with NetworkManager:
 
 ```bash
-sudo systemctl enable --now systemd-networkd
-sudo systemctl enable --now systemd-resolved
+nmcli device wifi list
+nmcli device wifi connect "Your SSID" password "your-password"
+```
+
+Or use the menu-driven `nmtui`. NetworkManager remembers the network from then on.
+
+### If you still have no network
+
+Check that NetworkManager is running:
+
+```bash
+sudo systemctl enable --now NetworkManager
+```
+
+Last resort, wired only: replace NetworkManager with systemd-networkd. Don't run the two side by side. First find your wired interface with `ip link` (`enp0s3` in VirtualBox; something like `enp3s0` or `eno1` on hardware):
+
+```bash
+sudo systemctl disable --now NetworkManager
 
 sudo tee /etc/systemd/network/20-wired.network << EOF
 [Match]
@@ -110,7 +155,9 @@ Name=enp0s3
 DHCP=yes
 EOF
 
-sudo systemctl restart systemd-networkd
+# Point DNS at systemd-resolved, or names won't resolve
+sudo ln -sf ../run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+sudo systemctl enable --now systemd-networkd systemd-resolved
 ```
 
 ---
@@ -1457,6 +1504,7 @@ sudo pacman -S sof-firmware alsa-firmware
 - This is normal — press `Super + Q` to open terminal
 
 **No network after install:**
+- On Wi-Fi, reconnect: `nmcli device wifi connect "SSID" password "..."` (the live ISO's Wi-Fi login isn't carried over)
 - Check NetworkManager: `sudo systemctl enable --now NetworkManager`
 - Or use systemd-networkd (see Part 3)
 
