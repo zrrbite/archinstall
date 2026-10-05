@@ -80,7 +80,10 @@ tmux new -s claude
 claude
 ```
 
-Detach without killing it: `Ctrl-b d`
+Detach without killing it: `Ctrl-a d`
+
+The keys in this guide use the prefix from the dotfiles' `~/.tmux.conf`,
+`Ctrl-a`. On stock tmux, use `Ctrl-b` instead.
 
 ### Reattach from anywhere
 
@@ -96,14 +99,14 @@ working directory, everything.
 
 | Action | Keys |
 |---|---|
-| Detach | `Ctrl-b d` |
+| Detach | `Ctrl-a d` |
 | List sessions | `tmux ls` |
 | Attach to session | `tmux attach -t claude` |
-| New window | `Ctrl-b c` |
-| Switch window | `Ctrl-b n` / `Ctrl-b p` |
-| Split horizontal | `Ctrl-b "` |
-| Split vertical | `Ctrl-b %` |
-| Navigate panes | `Ctrl-b arrow` |
+| New window | `Ctrl-a c` |
+| Switch window | `Ctrl-a n` / `Ctrl-a p` |
+| Split side by side | `Ctrl-a \|` |
+| Split stacked | `Ctrl-a -` |
+| Navigate panes | `Ctrl-a h/j/k/l` or `Ctrl-a arrow` |
 | Kill session | `tmux kill-session -t claude` |
 
 ## Step 5: Prevent suspend during remote sessions
@@ -170,7 +173,7 @@ or a Tailscale subnet router.
 2. Connect to saved host `archbox` (Tailscale IP)
 3. `tmux attach -t claude` (or `tmux ls` to see sessions)
 4. Interact with Claude Code
-5. When done, `Ctrl-b d` to detach (don't exit — keeps session alive)
+5. When done, `Ctrl-a d` to detach (don't exit — keeps session alive)
 
 ### Termius tips
 
@@ -187,7 +190,7 @@ or a Tailscale subnet router.
 ssh archbox
 tmux attach -t claude
 # ... work ...
-# Ctrl-b d to detach when done
+# Ctrl-a d to detach when done
 ```
 
 ---

@@ -1217,23 +1217,28 @@ This makes Discord run natively on Wayland instead of through XWayland.
 
 Install: `sudo pacman -S tmux`
 
-Default prefix: `Ctrl + B`
+Prefix: `Ctrl + A`. These keys are from the dotfiles' `~/.tmux.conf`. Stock tmux uses `Ctrl + B` as the prefix and splits with `%` (side by side) and `"` (stacked).
 
 | Shortcut | Action |
 |----------|--------|
-| `tmux` | Start new session |
-| `tmux attach` | Reattach to session |
-| `Ctrl+B, c` | New window |
-| `Ctrl+B, n` | Next window |
-| `Ctrl+B, p` | Previous window |
-| `Ctrl+B, %` | Vertical split |
-| `Ctrl+B, "` | Horizontal split |
-| `Ctrl+B, Arrow keys` | Move between panes |
-| `Ctrl+B, d` | Detach session |
-| `Ctrl+B, x` | Kill pane |
-| `Ctrl+B, &` | Kill window |
-| `Ctrl+B, [` | Scroll mode (q to exit) |
-| `Ctrl+B, z` | Toggle pane zoom |
+| `tmux new -s name` | Start a named session |
+| `tmux attach -t name` | Reattach to a session |
+| `tmux ls` | List sessions |
+| `Ctrl+A, c` | New window (in current directory) |
+| `Ctrl+A, n` / `Ctrl+A, Ctrl+L` | Next window |
+| `Ctrl+A, p` / `Ctrl+A, Ctrl+H` | Previous window |
+| `Ctrl+A, \|` | Split side by side |
+| `Ctrl+A, -` | Split stacked |
+| `Ctrl+A, h/j/k/l` or arrow keys | Move between panes |
+| `Ctrl+A, H/J/K/L` | Resize pane |
+| `Ctrl+A, d` | Detach session |
+| `Ctrl+A, x` | Kill pane (no confirmation) |
+| `Ctrl+A, &` | Kill window |
+| `Ctrl+A, [` | Copy mode: vi keys, `v` to select, `y` to copy, `q` to exit |
+| `Ctrl+A, z` | Toggle pane zoom |
+| `Ctrl+A, r` | Reload config |
+
+With Hyprland tiling your windows, tmux earns its place mainly as a session holder: a session survives closing the terminal, logging out or a Hyprland crash, and you can reattach over SSH (see [remote-cc-access.md](remote-cc-access.md)). For side-by-side terminals on the local machine, Hyprland's own tiling is usually simpler.
 
 ---
 
