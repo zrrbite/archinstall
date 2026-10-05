@@ -84,7 +84,8 @@ archinstall
 ```
 
 **Critical settings in archinstall:**
-- **Network configuration**: Select **NetworkManager** (important!)
+- **Network configuration**: Select **Use Network Manager (default backend)** (important!)
+- **Mirrors and repositories → Optional repositories**: Enable **multilib** (needed for `lib32-*` packages such as the 32-bit Vulkan loader)
 - Everything else to your preference
 
 Complete the installation and reboot.
@@ -120,7 +121,7 @@ For a quick, pre-configured setup instead of manual configuration, use the [dotf
 
 ```bash
 git clone https://github.com/zrrbite/dotfiles.git ~/dotfiles
-cd ~/dotfiles && ./install.sh
+cd ~/dotfiles && ./install_arch.sh
 ```
 
 This installs all packages and symlinks configs for:
@@ -140,6 +141,8 @@ See `~/dotfiles/README.md` for key bindings (`Super + F1` shows all) and how to 
 
 > **Note:** If you prefer manual control or want to understand each component, continue with the sections below. The dotfiles can also serve as reference configs.
 
+> **Heads-up:** The dotfiles' Hyprland config is still `hyprland.conf`, which Hyprland 0.57 stops loading. This guide uses the new `hyprland.lua` format — see [Part 5](#part-5-hyprland-configuration).
+
 ---
 
 ## Part 4: Install Hyprland and Desktop Environment
@@ -149,7 +152,7 @@ See `~/dotfiles/README.md` for key bindings (`Super + F1` shows all) and how to 
 ### Core packages
 
 ```bash
-sudo pacman -S hyprland foot wofi waybar hyprpaper hypridle hyprlock brightnessctl asciiquarium
+sudo pacman -S hyprland foot wofi waybar hyprpaper hypridle hyprlock brightnessctl asciiquarium mako
 ```
 
 - `hyprland` — Wayland compositor
@@ -161,18 +164,28 @@ sudo pacman -S hyprland foot wofi waybar hyprpaper hypridle hyprlock brightnessc
 - `hyprlock` — screen locker
 - `brightnessctl` — screen brightness control
 - `asciiquarium` — ASCII art aquarium screensaver
+- `mako` — notification daemon (some apps, Discord included, can freeze without one)
 
-### Portal and permissions
+### Portal, polkit agent and Qt support
 
 ```bash
-sudo pacman -S xdg-desktop-portal-wlr polkit
+sudo pacman -S xdg-desktop-portal-hyprland xdg-desktop-portal-gtk hyprpolkitagent qt5-wayland qt6-wayland
 ```
+
+- `xdg-desktop-portal-hyprland` — Hyprland's portal backend (screen sharing, screenshots). Use this instead of `xdg-desktop-portal-wlr`
+- `xdg-desktop-portal-gtk` — file picker dialogs, which the Hyprland portal doesn't provide
+- `hyprpolkitagent` — the password prompt when an app asks for elevated privileges. `polkit` alone has no prompt
+- `qt5-wayland`, `qt6-wayland` — native Wayland for Qt apps
+
+The polkit agent is started from the autostart block in Part 5.
 
 ### Fonts (fixes waybar icons)
 
 ```bash
-sudo pacman -S ttf-font-awesome otf-font-awesome ttf-nerd-fonts-symbols
+sudo pacman -S otf-font-awesome ttf-nerd-fonts-symbols noto-fonts
 ```
+
+`noto-fonts` gives you a sans-serif font; without one, some apps render squares instead of text.
 
 ### VirtualBox guest additions (VirtualBox only)
 
@@ -199,16 +212,16 @@ sudo pacman -S grim slurp wf-recorder
 - `slurp` — region selection
 - `wf-recorder` — screen recording
 
-Add keybindings to `hyprland.conf`:
+Add keybindings to the key bindings section of `~/.config/hypr/hyprland.lua` (Part 5):
 
-```ini
-# Screenshots
-bind = , Print, exec, grim ~/Pictures/Screenshots/$(date +%Y%m%d_%H%M%S).png
-bind = $mainMod SHIFT, S, exec, grim -g "$(slurp)" ~/Pictures/Screenshots/$(date +%Y%m%d_%H%M%S).png
+```lua
+-- Screenshots
+hl.bind("Print", hl.dsp.exec_cmd("grim ~/Pictures/Screenshots/$(date +%Y%m%d_%H%M%S).png"))
+hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd('grim -g "$(slurp)" ~/Pictures/Screenshots/$(date +%Y%m%d_%H%M%S).png'))
 
-# Screen recording
-bind = $mainMod SHIFT, R, exec, wf-recorder -f ~/Videos/recording_$(date +%Y%m%d_%H%M%S).mp4
-bind = $mainMod SHIFT, BackSpace, exec, pkill -INT wf-recorder
+-- Screen recording
+hl.bind(mainMod .. " + SHIFT + R", hl.dsp.exec_cmd("wf-recorder -f ~/Videos/recording_$(date +%Y%m%d_%H%M%S).mp4"))
+hl.bind(mainMod .. " + SHIFT + BackSpace", hl.dsp.exec_cmd("pkill -INT wf-recorder"))
 ```
 
 Create the directories:
@@ -229,11 +242,11 @@ Optional GUI mixer:
 sudo pacman -S pavucontrol
 ```
 
-Add volume keybinds to `hyprland.conf`:
-```
-bind = , XF86AudioRaiseVolume, exec, pamixer -i 5
-bind = , XF86AudioLowerVolume, exec, pamixer -d 5
-bind = , XF86AudioMute, exec, pamixer -t
+Add volume keybinds to `hyprland.lua` (`locked` keeps them working on the lock screen, `repeating` lets you hold the key):
+```lua
+hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("pamixer -i 5"), { locked = true, repeating = true })
+hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("pamixer -d 5"), { locked = true, repeating = true })
+hl.bind("XF86AudioMute",        hl.dsp.exec_cmd("pamixer -t"),   { locked = true })
 ```
 
 ### Bluetooth
@@ -271,91 +284,121 @@ For a GUI, run `blueman-manager`.
 
 ## Part 5: Hyprland Configuration
 
-> **Reference:** See `~/dotfiles/hypr/` for a complete Nord-themed Hyprland config with hyprlock and clipboard history.
+> **Reference:** See `~/dotfiles/hypr/` for a complete Nord-themed Hyprland config with hyprlock and clipboard history (still in the old `.conf` format).
 
-### ~/.config/hypr/hyprland.conf
+> **Config format:** Hyprland 0.55 moved its config to Lua, in `~/.config/hypr/hyprland.lua`. The old `hyprland.conf` still loads on 0.56 with a deprecation notice, and support is removed in 0.57. If both files exist, `hyprland.lua` wins. A pre-0.55 config won't carry over as-is either: 0.53 replaced the window rule syntax, so `windowrulev2` lines are now errors.
+
+### ~/.config/hypr/hyprland.lua
 
 ```bash
 mkdir -p ~/.config/hypr
-nano ~/.config/hypr/hyprland.conf
+nano ~/.config/hypr/hyprland.lua
 ```
 
-```ini
-# Monitor config (VirtualBox example - see "Bare Metal Differences" for real hardware)
-monitor = Virtual-1, 1920x1080@60, 0x0, 1
+If you launch Hyprland without a config, it writes the upstream example config here, which is a useful reference (also at `/usr/share/hypr/hyprland.lua`). Replace it with:
 
-# Variables
-$terminal = foot
-$menu = wofi --show drun
-$mainMod = SUPER
+```lua
+-- Monitor config (VirtualBox example - see "Bare Metal Differences" for real hardware)
+hl.monitor({
+    output   = "Virtual-1",
+    mode     = "1920x1080@60",
+    position = "0x0",
+    scale    = 1,
+})
 
-# Autostart
-exec-once = hyprpaper
-exec-once = waybar
+-- Variables
+local terminal = "foot"
+local menu     = "wofi --show drun"
+local mainMod  = "SUPER"
 
-# Environment for VirtualBox (remove on bare metal, except NVIDIA may need WLR_NO_HARDWARE_CURSORS)
-env = WLR_NO_HARDWARE_CURSORS,1
-env = WLR_RENDERER_ALLOW_SOFTWARE,1
+-- Autostart
+hl.on("hyprland.start", function()
+    hl.exec_cmd("hyprpaper")
+    hl.exec_cmd("waybar")
+    hl.exec_cmd("hypridle")
+    hl.exec_cmd("mako")
+    hl.exec_cmd("systemctl --user start hyprpolkitagent")
+end)
 
-# Danish keyboard layout
-input {
-    kb_layout = dk
+-- VirtualBox only: software cursor (remove on bare metal)
+hl.config({
+    cursor = {
+        no_hardware_cursors = 1,
+    },
+})
+
+-- Danish keyboard layout
+hl.config({
+    input = {
+        kb_layout = "dk",
+    },
+})
+
+-- Key bindings
+hl.bind(mainMod .. " + Q", hl.dsp.exec_cmd(terminal))
+hl.bind(mainMod .. " + C", hl.dsp.window.close())
+hl.bind(mainMod .. " + M", hl.dsp.exit())
+hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(menu))
+hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
+hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen())
+
+-- Move focus
+hl.bind(mainMod .. " + left",  hl.dsp.focus({ direction = "left" }))
+hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }))
+hl.bind(mainMod .. " + up",    hl.dsp.focus({ direction = "up" }))
+hl.bind(mainMod .. " + down",  hl.dsp.focus({ direction = "down" }))
+
+-- Switch to workspace / move window to workspace
+for i = 1, 9 do
+    hl.bind(mainMod .. " + " .. i,         hl.dsp.focus({ workspace = i }))
+    hl.bind(mainMod .. " + SHIFT + " .. i, hl.dsp.window.move({ workspace = i }))
+end
+
+-- Mouse bindings
+hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(),   { mouse = true })
+hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
+
+-- Scroll through workspaces
+hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
+hl.bind(mainMod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))
+
+-- Preselect where the next window opens
+hl.bind(mainMod .. " + B", hl.dsp.layout("preselect d"))  -- below
+hl.bind(mainMod .. " + N", hl.dsp.layout("preselect r"))  -- right
+
+-- Window groups (tabbed stacking)
+hl.bind(mainMod .. " + G",           hl.dsp.group.toggle())
+hl.bind(mainMod .. " + Tab",         hl.dsp.group.next())
+hl.bind(mainMod .. " + SHIFT + Tab", hl.dsp.group.prev())
+hl.bind(mainMod .. " + SHIFT + left",  hl.dsp.window.move({ direction = "left",  group_aware = true }))
+hl.bind(mainMod .. " + SHIFT + right", hl.dsp.window.move({ direction = "right", group_aware = true }))
+hl.bind(mainMod .. " + SHIFT + up",    hl.dsp.window.move({ direction = "up",    group_aware = true }))
+hl.bind(mainMod .. " + SHIFT + down",  hl.dsp.window.move({ direction = "down",  group_aware = true }))
+```
+
+Hyprland reloads the config when the file changes. Errors show up as a banner at the top of the screen. If the config fails before any binds are registered, Hyprland adds emergency binds: `Super + Q` (terminal), `Super + M` (exit).
+
+**Editor autocompletion:** Hyprland ships Lua type stubs in `/usr/share/hypr/stubs/`. Point your Lua language server at them with a `.luarc.json` in `~/.config/hypr/`:
+
+```json
+{
+    "workspace": {
+        "library": ["/usr/share/hypr/stubs"]
+    }
 }
-
-# Key bindings
-bind = $mainMod, Q, exec, $terminal
-bind = $mainMod, C, killactive
-bind = $mainMod, M, exit
-bind = $mainMod, R, exec, $menu
-bind = $mainMod, V, togglefloating
-bind = $mainMod, F, fullscreen
-
-# Move focus
-bind = $mainMod, left, movefocus, l
-bind = $mainMod, right, movefocus, r
-bind = $mainMod, up, movefocus, u
-bind = $mainMod, down, movefocus, d
-
-# Workspaces
-bind = $mainMod, 1, workspace, 1
-bind = $mainMod, 2, workspace, 2
-bind = $mainMod, 3, workspace, 3
-bind = $mainMod, 4, workspace, 4
-bind = $mainMod, 5, workspace, 5
-bind = $mainMod, 6, workspace, 6
-bind = $mainMod, 7, workspace, 7
-bind = $mainMod, 8, workspace, 8
-bind = $mainMod, 9, workspace, 9
-
-# Move window to workspace
-bind = $mainMod SHIFT, 1, movetoworkspace, 1
-bind = $mainMod SHIFT, 2, movetoworkspace, 2
-bind = $mainMod SHIFT, 3, movetoworkspace, 3
-bind = $mainMod SHIFT, 4, movetoworkspace, 4
-bind = $mainMod SHIFT, 5, movetoworkspace, 5
-bind = $mainMod SHIFT, 6, movetoworkspace, 6
-bind = $mainMod SHIFT, 7, movetoworkspace, 7
-bind = $mainMod SHIFT, 8, movetoworkspace, 8
-bind = $mainMod SHIFT, 9, movetoworkspace, 9
-
-# Mouse bindings
-bindm = $mainMod, mouse:272, movewindow
-bindm = $mainMod, mouse:273, resizewindow
-
-# Scroll through workspaces
-bind = $mainMod, mouse_down, workspace, e+1
-bind = $mainMod, mouse_up, workspace, e-1
 ```
 
 ### Idle/screensaver with hypridle
 
 Create `~/.config/hypr/hypridle.conf`:
 
+hypridle keeps its own `.conf` format; only the `hyprctl dispatch` commands it runs use the new Lua syntax.
+
 ```ini
 general {
     lock_cmd = pidof hyprlock || hyprlock
     before_sleep_cmd = loginctl lock-session
-    after_sleep_cmd = hyprctl dispatch dpms on
+    after_sleep_cmd = hyprctl dispatch 'hl.dsp.dpms({ action = "enable" })'
 }
 
 # Dim screen after 4 minutes
@@ -381,8 +424,8 @@ listener {
 # Turn off display after 15 minutes
 listener {
     timeout = 900
-    on-timeout = hyprctl dispatch dpms off
-    on-resume = hyprctl dispatch dpms on
+    on-timeout = hyprctl dispatch 'hl.dsp.dpms({ action = "disable" })'
+    on-resume = hyprctl dispatch 'hl.dsp.dpms({ action = "enable" })'
 }
 
 # Suspend after 30 minutes
@@ -398,30 +441,25 @@ Install asciiquarium for the screensaver:
 sudo pacman -S asciiquarium
 ```
 
-Add to autostart in `hyprland.conf`:
-
-```ini
-exec-once = hypridle
-```
+hypridle is already in the autostart block of `hyprland.lua` above.
 
 ### Workspace presets
 
-Launch apps on specific workspaces at startup:
+Launch apps on specific workspaces at startup. `hl.exec_cmd` takes window rules as a second argument:
 
-```ini
-# In hyprland.conf under AUTOSTART
-exec-once = [workspace 1] foot
-exec-once = [workspace 2] firefox
-exec-once = [workspace 3] discord
-exec-once = [workspace 3] foot -e btop   # tiled alongside discord
+```lua
+-- In hyprland.lua, inside the hl.on("hyprland.start", ...) autostart block
+hl.exec_cmd("foot",         { workspace = "1" })
+hl.exec_cmd("firefox",      { workspace = "2" })
+hl.exec_cmd("discord",      { workspace = "3" })
+hl.exec_cmd("foot -e btop", { workspace = "3" })  -- tiled alongside discord
 ```
 
-Assign apps to always open on specific workspaces:
+These rules follow the launched process's PID, so they miss apps that fork before opening a window. For those, assign the app to a workspace with a window rule, which applies whenever it opens:
 
-```ini
-# In hyprland.conf under WINDOWS AND WORKSPACES
-windowrulev2 = workspace 2, class:^(firefox)$
-windowrulev2 = workspace 3, class:^(discord)$
+```lua
+hl.window_rule({ match = { class = "^(firefox)$" }, workspace = "2" })
+hl.window_rule({ match = { class = "^(discord)$" }, workspace = "3" })
 ```
 
 Find window class names with:
@@ -442,12 +480,13 @@ Add at the end:
 
 ```bash
 if [ -z "$DISPLAY" ] && [ "$XDG_VTNR" = 1 ]; then
-    # VirtualBox only - remove these two lines on bare metal (except NVIDIA may need the first)
-    export WLR_NO_HARDWARE_CURSORS=1
-    export WLR_RENDERER_ALLOW_SOFTWARE=1
-    exec Hyprland
+    exec start-hyprland
 fi
 ```
+
+`start-hyprland` (Hyprland 0.53+) is the supported launcher: if Hyprland crashes, it restarts it in safe mode. Running `Hyprland` directly still works but shows a warning notification.
+
+> **Upgrading an older setup:** remove any `WLR_NO_HARDWARE_CURSORS` / `WLR_RENDERER_ALLOW_SOFTWARE` exports. Hyprland stopped using wlroots in 0.42, so these variables do nothing. The cursor workaround is now the `cursor` setting in `hyprland.lua`.
 
 ---
 
@@ -480,10 +519,10 @@ font-reset=Control+Shift+0
 
 Foot uses manual color configuration. Add to `~/.config/foot/foot.ini`:
 
-**Dracula theme example:**
+**Dracula theme example** (foot 1.26 renamed `[colors]` to `[colors-dark]`, and 1.28 removed the old name):
 
 ```ini
-[colors]
+[colors-dark]
 background=282a36
 foreground=f8f8f2
 regular0=21222c
@@ -504,16 +543,10 @@ bright6=a4ffff
 bright7=ffffff
 ```
 
-**Pre-made themes:**
-
-```bash
-git clone https://codeberg.org/toonn/foot-themes.git ~/.config/foot/themes
-```
-
-Then in `foot.ini`:
+**Pre-made themes:** foot ships dozens in `/usr/share/foot/themes/` (dracula, nord, gruvbox, catppuccin, tokyonight, ...). Include one in `foot.ini`:
 
 ```ini
-include=~/.config/foot/themes/dracula
+include=/usr/share/foot/themes/dracula
 ```
 
 ### System info on launch (fastfetch)
@@ -567,25 +600,23 @@ curl -L -o wallpaper.jpg "https://images.unsplash.com/photo-1511300636408-a63a89
 
 ### ~/.config/hypr/hyprpaper.conf
 
-**Important:** Use full paths, not `~`. First check your monitor name:
-
-```bash
-hyprctl monitors
-```
-
-Then create the config:
+hyprpaper 0.8 rewrote its config format: `preload` is gone, and an old-style config makes hyprpaper refuse to start.
 
 ```bash
 nano ~/.config/hypr/hyprpaper.conf
 ```
 
-```
-preload = /home/YOURUSERNAME/Pictures/wallpaper.jpg
-wallpaper = ,/home/YOURUSERNAME/Pictures/wallpaper.jpg
+```ini
+wallpaper {
+    monitor =
+    path = ~/Pictures/wallpaper.jpg
+    fit_mode = cover
+}
+
 splash = false
 ```
 
-Replace `YOURUSERNAME` with your actual username. The empty monitor name `,` auto-detects your display.
+An empty `monitor` makes this the fallback for every display. For a different wallpaper per display, add one `wallpaper { }` block per monitor name from `hyprctl monitors`. `path` can also be a directory, which turns it into a slideshow (see `timeout` and `order` on the [hyprpaper wiki page](https://wiki.hypr.land/Hypr-Ecosystem/hyprpaper/)).
 
 ### Reload hyprpaper
 
@@ -595,11 +626,10 @@ After changing the config:
 pkill hyprpaper && hyprpaper &
 ```
 
-Or change wallpaper on the fly without editing the config:
+Or change wallpaper on the fly without editing the config (empty monitor = all displays):
 
 ```bash
-hyprctl hyprpaper preload "/path/to/image.jpg"
-hyprctl hyprpaper wallpaper ",/path/to/image.jpg"
+hyprctl hyprpaper wallpaper ", $HOME/Pictures/other.jpg"
 ```
 
 ---
@@ -649,6 +679,8 @@ pkill waybar; waybar &
 
 > **Reference:** The dotfiles repo includes configs for git (with extensive aliases), neovim (LSP + treesitter), starship prompt, and clang-format/clang-tidy. See `~/dotfiles/README.md` for the full list.
 
+> **AUR:** Some packages below (`p4`, `p4v`, `rider`) come from the AUR. Install `yay` first, see [Part 12](#part-12-aur-and-google-chrome).
+
 ### Essential packages
 
 ```bash
@@ -657,7 +689,7 @@ sudo pacman -S git base-devel cmake make neovim tmux
 
 ### Git configuration
 
-The dotfiles include a comprehensive `.gitconfig` with aliases and settings. After running `install.sh`, edit your name and email:
+The dotfiles include a comprehensive `.gitconfig` with aliases and settings. After running `install_arch.sh`, edit your name and email:
 
 ```bash
 nano ~/dotfiles/git/.gitconfig
@@ -810,7 +842,7 @@ starship preset pastel-powerline -o ~/.config/starship.toml
 
 **VS Code terminal font:**
 
-Add to `~/.config/Code/User/settings.json`:
+Add to `~/.config/Code - OSS/User/settings.json` (that's the `code` package; `visual-studio-code-bin` uses `~/.config/Code/User/settings.json`):
 
 ```json
 {
@@ -821,10 +853,10 @@ Add to `~/.config/Code/User/settings.json`:
 ### LLVM/Clang toolchain
 
 ```bash
-sudo pacman -S llvm clang clang-tools-extra
+sudo pacman -S llvm clang
 ```
 
-This gives you:
+The old `clang-tools-extra` package is now part of `clang`. This gives you:
 - `clang` / `clang++` — compilers
 - `clangd` — language server
 - `clang-format` — code formatter
@@ -832,22 +864,15 @@ This gives you:
 
 ### Claude Code
 
-```bash
-sudo pacman -S nodejs npm
-npm install -g @anthropic-ai/claude-code
-```
-
-If you get permission errors with global npm:
+Use the native installer. It doesn't need Node.js and updates itself:
 
 ```bash
-mkdir -p ~/.npm-global
-npm config set prefix '~/.npm-global'
-echo 'export PATH="$HOME/.npm-global/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc
-npm install -g @anthropic-ai/claude-code
+curl -fsSL https://claude.ai/install.sh | bash
 ```
 
-Run with `claude`. It will prompt for authentication on first run.
+It installs to `~/.local/bin/claude`, so make sure `~/.local/bin` is on your `PATH`. Run with `claude`. It will prompt for authentication on first run.
+
+See [claude-code-install.md](claude-code-install.md) for PATH setup and for removing an old npm install.
 
 ### VS Code
 
@@ -855,12 +880,19 @@ Run with `claude`. It will prompt for authentication on first run.
 sudo pacman -S code
 ```
 
+The `code` package is **Code - OSS**, the open-source build. It installs extensions from Open VSX instead of Microsoft's marketplace. Everything below is on Open VSX.
+
 **VS Code setup:**
 1. Open VS Code: `code`
 2. Install the **clangd** extension (by LLVM)
-3. Disable Microsoft C/C++ IntelliSense when prompted
-4. Install **Vim** extension (by vscodevim) for vim keybindings
-5. Install **CodeLLDB** extension for debugging
+3. Install **Vim** extension (by vscodevim) for vim keybindings
+4. Install **CodeLLDB** extension for debugging
+
+**Need Microsoft-only extensions?** Remote - SSH (used in [remote-ue-build-guide.md](remote-ue-build-guide.md)) and Microsoft's C/C++ extension only work in the proprietary build. Install that from the AUR instead:
+
+```bash
+yay -S visual-studio-code-bin
+```
 
 ### JetBrains Rider (recommended for Unreal Engine)
 
@@ -1128,7 +1160,7 @@ This makes Discord run natively on Wayland instead of through XWayland.
 | `Super + B` | Preselect below (next window opens underneath) |
 | `Super + N` | Preselect right (next window opens beside) |
 | `Super + G` | Toggle window group (tabbed stacking) |
-| `Super + Shift + Arrow` | Move window into group in that direction |
+| `Super + Shift + Arrow` | Move window that way, into or out of a group |
 | `Super + Tab` | Next tab in group |
 | `Super + Shift + Tab` | Previous tab in group |
 
@@ -1257,27 +1289,31 @@ sudo btrfs filesystem resize max /
 ```bash
 # All official packages in one command
 sudo pacman -S \
-    hyprland foot wofi waybar hyprpaper \
-    xdg-desktop-portal-wlr polkit \
-    ttf-font-awesome otf-font-awesome ttf-nerd-fonts-symbols ttf-jetbrains-mono-nerd \
-    wl-clipboard \
+    hyprland foot wofi waybar hyprpaper hypridle hyprlock brightnessctl asciiquarium mako \
+    xdg-desktop-portal-hyprland xdg-desktop-portal-gtk hyprpolkitagent qt5-wayland qt6-wayland \
+    otf-font-awesome ttf-nerd-fonts-symbols ttf-jetbrains-mono-nerd noto-fonts \
+    wl-clipboard grim slurp wf-recorder \
     pipewire pipewire-pulse wireplumber pamixer pavucontrol \
-    git base-devel cmake make neovim tmux nodejs npm starship \
-    llvm clang clang-tools-extra \
-    code firefox thunar
+    bluez bluez-utils blueman \
+    git base-devel cmake make neovim tmux openssh starship \
+    llvm clang \
+    code firefox thunar discord
 
 # Enable audio (run as your user, not root)
 systemctl --user enable --now pipewire pipewire-pulse wireplumber
+
+# Enable Bluetooth
+sudo systemctl enable --now bluetooth
 
 # VirtualBox only
 sudo pacman -S virtualbox-guest-utils
 sudo systemctl enable --now vboxservice
 
-# Claude Code
-npm install -g @anthropic-ai/claude-code
+# Claude Code (native installer, auto-updates)
+curl -fsSL https://claude.ai/install.sh | bash
 
 # AUR packages (after installing yay)
-yay -S google-chrome rider zoom
+yay -S google-chrome zoom slack-desktop p4 p4v rider
 # Or for JetBrains Toolbox:
 # yay -S jetbrains-toolbox
 ```
@@ -1295,84 +1331,74 @@ When installing on real hardware instead of VirtualBox, make these changes:
 virtualbox-guest-utils
 ```
 
-### Skip these environment variables
+### Remove the VirtualBox cursor setting
 
-Remove from `~/.bash_profile` and `hyprland.conf`:
-
-```bash
-# Not needed on bare metal
-WLR_NO_HARDWARE_CURSORS=1
-WLR_RENDERER_ALLOW_SOFTWARE=1
-```
+Delete the `cursor = { no_hardware_cursors = 1 }` block from `hyprland.lua`. The default (`2`, auto) picks the right cursor mode on real hardware, NVIDIA included.
 
 ### Install GPU drivers instead
 
 **AMD:**
 ```bash
-sudo pacman -S mesa vulkan-radeon libva-mesa-driver
+sudo pacman -S mesa vulkan-radeon
 ```
 
-**NVIDIA (detailed setup for RTX cards):**
+Video decode (VA-API) is built into `mesa`; the separate `libva-mesa-driver` package was merged into it.
 
-Install drivers (use nvidia-open for RTX 20 series and newer):
+**NVIDIA:**
+
+Arch's main driver now uses NVIDIA's open kernel modules and only supports Turing (RTX 20 / GTX 16 series) and newer. The old closed `nvidia` package is gone.
 
 ```bash
-# For RTX 20+ series (recommended)
+# Turing (RTX 20 / GTX 16) and newer
 sudo pacman -S nvidia-open nvidia-utils nvidia-settings
+# On linux-lts or several kernels, use nvidia-open-dkms (plus the matching *-headers) instead of nvidia-open
 
-# Or for older cards / if open drivers have issues
-sudo pacman -S nvidia nvidia-utils nvidia-settings
+# Maxwell, Pascal, Volta (GTX 900 / GTX 10 series): legacy driver from the AUR
+# yay -S nvidia-580xx-dkms nvidia-580xx-utils
 
-# For brand new GPUs (if drivers are lagging in main repo)
-# yay -S nvidia-beta
+# Brand-new GPUs the repo driver doesn't support yet
+# yay -S nvidia-open-beta
 ```
 
-Vulkan support (needed for UE):
+Vulkan support (needed for UE). `lib32-*` packages need the multilib repo (see Part 2):
 
 ```bash
 sudo pacman -S vulkan-icd-loader lib32-vulkan-icd-loader
 ```
 
-Enable DRM kernel mode setting. Edit `/etc/default/grub`:
-
-```
-GRUB_CMDLINE_LINUX_DEFAULT="nvidia_drm.modeset=1"
-```
-
-Then regenerate grub config:
+DRM kernel mode setting (`nvidia_drm.modeset=1`) is on by default since driver 560, so no bootloader edits are needed. Verify after reboot:
 
 ```bash
-sudo grub-mkconfig -o /boot/grub/grub.cfg
+cat /sys/module/nvidia_drm/parameters/modeset   # should print Y
 ```
 
-Or if using systemd-boot, add `nvidia_drm.modeset=1` to your kernel options in `/boot/loader/entries/arch.conf`.
-
-Early loading (recommended). Edit `/etc/mkinitcpio.conf`:
+Early loading (optional, helps if the display comes up late or flickers at boot). Edit `/etc/mkinitcpio.conf`:
 
 ```
 MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)
 ```
 
-Then regenerate initramfs:
+`nvidia-utils` already blacklists nouveau. To also keep it out of the initramfs, remove `kms` from the `HOOKS` array in the same file. Then regenerate the initramfs:
 
 ```bash
 sudo mkinitcpio -P
 ```
 
-Add to `hyprland.conf` for NVIDIA:
+Reboot after all changes. No Hyprland environment variables are needed on current drivers. Older guides set `GBM_BACKEND`, `__GLX_VENDOR_LIBRARY_NAME` and `WLR_NO_HARDWARE_CURSORS`; drop them.
 
-```
-env = LIBVA_DRIVER_NAME,nvidia
-env = XDG_SESSION_TYPE,wayland
-env = GBM_BACKEND,nvidia-drm
-env = __GLX_VENDOR_LIBRARY_NAME,nvidia
-env = WLR_NO_HARDWARE_CURSORS,1
+Optional hardware video decode (per the Arch wiki, it can draw more power than CPU decoding):
+
+```bash
+sudo pacman -S libva-nvidia-driver
 ```
 
-Reboot after all changes.
+```lua
+-- hyprland.lua
+hl.env("LIBVA_DRIVER_NAME", "nvidia")
+```
 
 **NVIDIA tips:**
-- Hardware cursors are buggy on Wayland — keep `WLR_NO_HARDWARE_CURSORS=1`
+- If the cursor flickers or vanishes, force a software cursor: `hl.config({ cursor = { no_hardware_cursors = 1 } })`
 - Chrome/Electron apps may need `--ozone-platform=wayland` flag
 - Use `nvidia-settings` to troubleshoot screen tearing
 - Hyprland's explicit sync helps with NVIDIA — update Hyprland regularly
@@ -1387,16 +1413,14 @@ sudo pacman -S mesa vulkan-intel intel-media-driver
 Replace the VirtualBox monitor line with your actual displays:
 
 ```bash
-# Check connected monitors
-hyprctl monitors
-# Or before starting Hyprland:
-wlr-randr
+# Check connected monitors (including disabled ones)
+hyprctl monitors all
 ```
 
-Example for a real monitor:
-```
-monitor = DP-1, 2560x1440@144, 0x0, 1
-monitor = HDMI-A-1, 1920x1080@60, 2560x0, 1
+Example for real monitors:
+```lua
+hl.monitor({ output = "DP-1",     mode = "2560x1440@144", position = "0x0",    scale = 1 })
+hl.monitor({ output = "HDMI-A-1", mode = "1920x1080@60",  position = "2560x0", scale = 1 })
 ```
 
 ### Terminal
@@ -1406,9 +1430,9 @@ Kitty should work on bare metal (GPU acceleration available):
 sudo pacman -S kitty
 ```
 
-Change in `hyprland.conf`:
-```
-$terminal = kitty
+Change in `hyprland.lua`:
+```lua
+local terminal = "kitty"
 ```
 
 ### Clipboard
@@ -1437,20 +1461,24 @@ sudo pacman -S sof-firmware alsa-firmware
 - Or use systemd-networkd (see Part 3)
 
 **Hyprland crashes in VirtualBox:**
-- Ensure 3D acceleration is enabled
-- Add software rendering environment variables
+- Ensure 3D acceleration is enabled. Hyprland won't run without it, and the old `WLR_RENDERER_ALLOW_SOFTWARE` workaround no longer does anything
+
+**Red config error banner after an update:**
+- Hyprland 0.53+ rejects `windowrulev2` and the old `windowrule` syntax
+- Hyprland 0.56 warns that `hyprland.conf` is deprecated (removed in 0.57)
+- Fix both by moving to `hyprland.lua` (see Part 5)
 
 **Waybar shows weird symbols:**
 - Install font-awesome and nerd-fonts packages
 
 **Waybar not showing workspaces:**
-- Create custom waybar config (see Part 8)
+- Create custom waybar config (see Part 9)
 
 **Can't paste into terminal:**
 - Use `Ctrl + Shift + V` (not `Ctrl + V`)
 - Enable clipboard sharing in VirtualBox
 
-**Hyprpaper "does not have a target" error:**
-- Use full paths in hyprpaper.conf, not `~`
-- Check monitor name with `hyprctl monitors`
-- Format: `wallpaper = Virtual-1,/full/path/to/image.jpg`
+**No wallpaper / hyprpaper exits at startup:**
+- hyprpaper 0.8+ refuses to start with an old-style config (`preload = ...`, `wallpaper = monitor,path`)
+- Use the `wallpaper { }` block from Part 8
+- Run `hyprpaper` in a terminal to see the config error
