@@ -1219,6 +1219,8 @@ Install: `sudo pacman -S tmux`
 
 Prefix: `Ctrl + A`. These keys are from the dotfiles' `~/.tmux.conf`. Stock tmux uses `Ctrl + B` as the prefix and splits with `%` (side by side) and `"` (stacked).
 
+**Learning tmux:** the dotfiles have a fuller reference and a one-week plan for getting fluent: [dotfiles `doc/tmux.md`](https://github.com/zrrbite/dotfiles/blob/master/doc/tmux.md). It's written for the Mac setup. The ⌘ session keys are Mac-only, and its `t` command is defined in `zsh/.zshrc`, so it doesn't exist in bash on this Arch setup.
+
 | Shortcut | Action |
 |----------|--------|
 | `tmux new -s name` | Start a named session |
