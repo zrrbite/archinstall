@@ -184,8 +184,8 @@ scripts/verify.sh
 ```
 
 Then reboot and **log in on TTY1**: Hyprland starts automatically
-(`bash/.bash_profile-arch`). There's no display manager, so there's no
-session to pick.
+(`zsh-linux/.zprofile`; zsh is the login shell). There's no display manager,
+so there's no session to pick.
 
 What it installs and links, and what to do by hand (NVIDIA comes first, see
 [Bare Metal Differences](#bare-metal-differences)), is in the dotfiles'
