@@ -196,7 +196,7 @@ drift from them.
 
 > **Note:** If you prefer manual control or want to understand each component, continue with the sections below. The dotfiles can also serve as reference configs.
 
-> **Heads-up:** The dotfiles' Hyprland config is still `hyprland.conf`, which Hyprland 0.57 stops loading (Arch shipped 0.56.2 as of 2026-10-06). Until the dotfiles migrate, either hold Hyprland at 0.56 or use this guide's `hyprland.lua` format — see [Part 5](#part-5-hyprland-configuration).
+> **Heads-up:** The dotfiles' Hyprland config is still `hyprland.conf`, which Hyprland 0.57 stops loading (Arch shipped 0.56.2 as of 2026-10-05). Until the dotfiles migrate, either hold Hyprland at 0.56 or use this guide's `hyprland.lua` format — see [Part 5](#part-5-hyprland-configuration).
 
 ---
 
