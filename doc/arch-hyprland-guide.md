@@ -164,31 +164,39 @@ sudo systemctl enable --now systemd-networkd systemd-resolved
 
 ## Using Dotfiles
 
-For a quick, pre-configured setup instead of manual configuration, use the [dotfiles repo](https://github.com/zrrbite/dotfiles):
+For a pre-configured, Nord-themed setup instead of configuring everything
+by hand, use the [dotfiles repo](https://github.com/zrrbite/dotfiles). On a
+fresh install:
 
 ```bash
+# 1. Git identity first. The dotfiles keep name/email in ~/.gitconfig.local,
+#    and a fresh machine has no old config to copy them from.
+git config -f ~/.gitconfig.local user.name  "Your Name"
+git config -f ~/.gitconfig.local user.email "you@example.com"
+git config -f ~/.gitconfig.local credential.helper "cache --timeout=86400"
+
+# 2. Install and link everything (asks for your sudo password)
 git clone https://github.com/zrrbite/dotfiles.git ~/dotfiles
 cd ~/dotfiles && ./install_arch.sh
+
+# 3. Check -- exit 0 means done
+scripts/verify.sh
 ```
 
-This installs all packages and symlinks configs for:
-- **Hyprland** + hyprpaper + hyprlock + hypridle + cliphist
-- **Foot** terminal (Nord theme, transparency)
-- **Waybar** status bar (Nord theme)
-- **Rofi** app launcher (replaces wofi)
-- **Mako** notifications
-- **Starship** prompt
-- **Neovim** IDE setup (LSP, treesitter)
-- **Git** config with aliases
-- Audio via pipewire
+Then reboot and **log in on TTY1**: Hyprland starts automatically
+(`bash/.bash_profile-arch`). There's no display manager, so there's no
+session to pick.
 
-After install, log out and select Hyprland as your session.
-
-See `~/dotfiles/README.md` for key bindings (`Super + F1` shows all) and how to manage configs with GNU Stow.
+What it installs and links, and what to do by hand (NVIDIA comes first, see
+[Bare Metal Differences](#bare-metal-differences)), is in the dotfiles'
+[doc/applying-the-setup.md](https://github.com/zrrbite/dotfiles/blob/master/doc/applying-the-setup.md)
+(Path A). The exact package lists are in `install_arch.sh` and
+`scripts/packages.sh`. They're not repeated here, so this guide can't
+drift from them.
 
 > **Note:** If you prefer manual control or want to understand each component, continue with the sections below. The dotfiles can also serve as reference configs.
 
-> **Heads-up:** The dotfiles' Hyprland config is still `hyprland.conf`, which Hyprland 0.57 stops loading. This guide uses the new `hyprland.lua` format — see [Part 5](#part-5-hyprland-configuration).
+> **Heads-up:** The dotfiles' Hyprland config is still `hyprland.conf`, which Hyprland 0.57 stops loading (Arch shipped 0.56.2 as of 2026-10-06). Until the dotfiles migrate, either hold Hyprland at 0.56 or use this guide's `hyprland.lua` format — see [Part 5](#part-5-hyprland-configuration).
 
 ---
 
