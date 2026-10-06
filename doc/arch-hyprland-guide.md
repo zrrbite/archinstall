@@ -1,6 +1,103 @@
 # Arch Linux + Hyprland Setup Guide
 
-A complete guide for setting up Arch Linux with Hyprland compositor.
+A complete guide for setting up Arch Linux with Hyprland compositor. Using
+the dotfiles? Follow the [fast path](#fast-path-arch-with-the-dotfiles-step-by-step)
+below; the rest of the guide is the reference behind it.
+
+---
+
+## Fast path: Arch with the dotfiles, step by step
+
+From a blank disk to a working Hyprland desktop set up by the
+[dotfiles repo](https://github.com/zrrbite/dotfiles). Each step says what you
+should see before going on. The parts after this explain each piece, and how
+to do it all by hand instead.
+
+1. **Make the USB stick and boot it, with Secure Boot off.**
+   [Part 1](#part-1-preparing-installation-media).
+
+2. **Get online in the live system.** Wired works on its own. For Wi-Fi, run
+   `iwctl`, then `station wlan0 connect "Your SSID"`
+   ([Part 2](#connect-to-the-network-in-the-live-iso)).
+   You should see: `ping -c 3 archlinux.org` gets replies.
+
+3. **Run `archinstall`** with the settings in [Part 2](#run-the-installer):
+   NetworkManager, a user with sudo, multilib, the **Minimal** profile. Also
+   add **`git`** under **Additional packages**: the dotfiles are cloned with
+   it, and a Minimal install doesn't have it. Install, reboot, and remove the
+   stick.
+
+4. **Log in as your user and get online again.** Wi-Fi has to be connected
+   once more ([Part 3](#network-after-reboot)):
+   ```bash
+   nmcli device wifi connect "Your SSID" password "your-password"
+   ```
+
+5. **Update the system**, and get git if step 3 missed it:
+   ```bash
+   sudo pacman -Syu git
+   ```
+
+6. **Graphics driver.** Intel and AMD: nothing to do. NVIDIA: install the
+   driver now, before the dotfiles
+   ([Install GPU drivers](#install-gpu-drivers-instead)), then reboot.
+
+7. **Check which Hyprland you'll get:**
+   ```bash
+   pacman -Si hyprland | grep '^Version'
+   ```
+   0.56 or older: carry on. **0.57 or newer** no longer reads the dotfiles'
+   `hyprland.conf`, and their Lua version (branch `hypr-lua`) isn't merged
+   yet, so Hyprland would start unconfigured. Check the dotfiles repo before
+   going on.
+
+8. **Tell git who you are.** The dotfiles keep your name and email in
+   `~/.gitconfig.local`, outside the shared config:
+   ```bash
+   git config -f ~/.gitconfig.local user.name  "Your Name"
+   git config -f ~/.gitconfig.local user.email "you@example.com"
+   git config -f ~/.gitconfig.local credential.helper "cache --timeout=86400"
+   ```
+
+9. **Clone the dotfiles and run the installer:**
+   ```bash
+   git clone https://github.com/zrrbite/dotfiles.git ~/dotfiles
+   cd ~/dotfiles && ./install_arch.sh
+   ```
+   It asks for your sudo password, possibly again later in the run, and takes
+   a while: most of it is downloading, then building the AUR packages (Chrome,
+   Slack and others). It installs the packages, backs up any config it
+   replaces to `~/.config-backup-<date>/`, links the dotfiles, and makes zsh
+   your login shell. It ends with a list of problems, if there were any. It's
+   safe to run again: after a failed AUR build or a network hiccup, just
+   re-run it.
+
+10. **Check the result:**
+    ```bash
+    scripts/verify.sh
+    ```
+    You should see `All checks passed`. Each FAIL line says what to run.
+
+11. **Reboot and log in on TTY1**, the first text console. Hyprland starts by
+    itself; there's no login screen. You should see the bar and the wallpaper.
+    Then:
+    - `Super+Q` opens a terminal (foot) with zsh and the Nord prompt;
+      `echo $SHELL` says `/usr/bin/zsh`.
+    - `t` in that terminal starts a tmux session for the current folder.
+    - `Super+R` opens the app launcher; `Super+F1` lists every key binding.
+
+12. **Optional, when you need them:**
+    - Pushing to GitHub over SSH: [GitHub SSH setup](#github-ssh-setup-recommended).
+    - Claude Code: [claude-code-install.md](claude-code-install.md).
+    - Bluetooth pairing: [Bluetooth](#bluetooth).
+    - Secure Boot: not covered here; see the Arch wiki's *Secure Boot* page.
+
+What the installer installs and links, and the manual steps it can't do, are
+in the dotfiles' [doc/applying-the-setup.md](https://github.com/zrrbite/dotfiles/blob/master/doc/applying-the-setup.md)
+(Path A). The package lists live in its `install_arch.sh` and aren't copied
+here, so this guide can't drift from them. To update a machine that already
+has the dotfiles, follow the dotfiles'
+[CHANGELOG.md](https://github.com/zrrbite/dotfiles/blob/master/CHANGELOG.md).
 
 ---
 
@@ -121,7 +218,7 @@ Complete the installation and reboot.
 
 ## Part 3: Post-Install Setup
 
-> **Quick Setup Alternative:** If you want a pre-configured Nord-themed Hyprland environment instead of manual configuration, see [Using Dotfiles](#using-dotfiles) after completing the post-install network setup. The dotfiles repo automates Parts 4-9 with tested configs.
+> **Using the dotfiles?** The [fast path](#fast-path-arch-with-the-dotfiles-step-by-step) covers this part as steps 4 and 5, then has the dotfiles do Parts 4-9 with tested configs.
 
 ### Network after reboot
 
@@ -159,44 +256,6 @@ EOF
 sudo ln -sf ../run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
 sudo systemctl enable --now systemd-networkd systemd-resolved
 ```
-
----
-
-## Using Dotfiles
-
-For a pre-configured, Nord-themed setup instead of configuring everything
-by hand, use the [dotfiles repo](https://github.com/zrrbite/dotfiles). On a
-fresh install:
-
-```bash
-# 1. Git identity first. The dotfiles keep name/email in ~/.gitconfig.local,
-#    and a fresh machine has no old config to copy them from.
-git config -f ~/.gitconfig.local user.name  "Your Name"
-git config -f ~/.gitconfig.local user.email "you@example.com"
-git config -f ~/.gitconfig.local credential.helper "cache --timeout=86400"
-
-# 2. Install and link everything (asks for your sudo password)
-git clone https://github.com/zrrbite/dotfiles.git ~/dotfiles
-cd ~/dotfiles && ./install_arch.sh
-
-# 3. Check -- exit 0 means done
-scripts/verify.sh
-```
-
-Then reboot and **log in on TTY1**: Hyprland starts automatically
-(`zsh-linux/.zprofile`; zsh is the login shell). There's no display manager,
-so there's no session to pick.
-
-What it installs and links, and what to do by hand (NVIDIA comes first, see
-[Bare Metal Differences](#bare-metal-differences)), is in the dotfiles'
-[doc/applying-the-setup.md](https://github.com/zrrbite/dotfiles/blob/master/doc/applying-the-setup.md)
-(Path A). The exact package lists are in `install_arch.sh` and
-`scripts/packages.sh`. They're not repeated here, so this guide can't
-drift from them.
-
-> **Note:** If you prefer manual control or want to understand each component, continue with the sections below. The dotfiles can also serve as reference configs.
-
-> **Heads-up:** The dotfiles' Hyprland config is still `hyprland.conf`, which Hyprland 0.57 stops loading (Arch shipped 0.56.2 as of 2026-10-05). Until the dotfiles migrate, either hold Hyprland at 0.56 or use this guide's `hyprland.lua` format — see [Part 5](#part-5-hyprland-configuration).
 
 ---
 

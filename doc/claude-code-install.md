@@ -14,14 +14,14 @@ This installs to `~/.local/share/claude/versions/` and symlinks
 
 ### PATH setup
 
-Make sure `~/.local/bin` is on your PATH. Add to `~/.bashrc` or
-`~/.zshrc`:
+With the dotfiles, `~/.local/bin` is already on your PATH (their
+`zsh/.zshrc` adds it). Without them, add it to `~/.zshrc` (or `~/.bashrc`):
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
 ```
 
-Then `source ~/.bashrc` or restart your shell.
+Then open a new shell.
 
 ### Verify
 
