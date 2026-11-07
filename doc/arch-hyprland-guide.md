@@ -22,7 +22,8 @@ to do it all by hand instead.
    You should see: `ping -c 3 archlinux.org` gets replies.
 
 3. **Run `archinstall`** with the settings in [Part 2](#run-the-installer):
-   NetworkManager, a user with sudo, multilib, the **Minimal** profile. Also
+   NetworkManager, a user with sudo, multilib, the **Minimal** profile, and
+   no separate `/home` partition (btrfs, or ext4 answering No). Also
    add **`git`** under **Additional packages**: the dotfiles are cloned with
    it, and a Minimal install doesn't have it. Install, reboot, and remove the
    stick.
@@ -210,6 +211,7 @@ archinstall
 - **Authentication → User account**: Add a user and answer **yes** to "superuser (sudo)". The rest of the guide uses `sudo`, and Hyprland must not run as root
 - **Mirrors and repositories → Optional repositories**: Enable **multilib** (needed for `lib32-*` packages such as the 32-bit Vulkan loader)
 - **Profile**: **Minimal**, since this guide installs the desktop itself. archinstall's own Hyprland profile also works, but by default it adds the SDDM login manager, which takes over from the TTY auto-start in Part 5, plus its own app picks (kitty, dolphin, dunst)
+- **Disk configuration**: **btrfs** with the default subvolumes, or **ext4** and answer **No** to *Would you like to create a separate partition for /home?* With a separate `/home`, archinstall makes root only 32 GiB on any disk under 320 GiB, and it fills up until `pacman -Syu` fails. If that has already happened, see [resize-partitions.md](resize-partitions.md)
 - Everything else to your preference
 
 Complete the installation and reboot.
@@ -1581,6 +1583,10 @@ sudo pacman -S sof-firmware alsa-firmware
 - On Wi-Fi, reconnect: `nmcli device wifi connect "SSID" password "..."` (the live ISO's Wi-Fi login isn't carried over)
 - Check NetworkManager: `sudo systemctl enable --now NetworkManager`
 - Or use systemd-networkd (see Part 3)
+
+**`pacman -Syu` fails with "Partition / too full":**
+- The root partition is full, usually from the package cache: `sudo pacman -Sc` frees room right away
+- For good: [resize-partitions.md](resize-partitions.md) moves space from `/home` to root
 
 **Hyprland crashes in VirtualBox:**
 - Ensure 3D acceleration is enabled. Hyprland won't run without it, and the old `WLR_RENDERER_ALLOW_SOFTWARE` workaround no longer does anything
