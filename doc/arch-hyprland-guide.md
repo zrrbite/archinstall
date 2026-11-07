@@ -808,19 +808,14 @@ sudo pacman -S git base-devel cmake make neovim tmux
 
 ### Git configuration
 
-The dotfiles include a comprehensive `.gitconfig` with aliases and settings. After running `install_arch.sh`, edit your name and email:
+The dotfiles include a comprehensive `.gitconfig` with aliases and settings. It's shared by every machine, so it has no name or email. Those go in `~/.gitconfig.local`, which it includes last:
 
 ```bash
-nano ~/dotfiles/git/.gitconfig
+git config -f ~/.gitconfig.local user.name  "Your Name"
+git config -f ~/.gitconfig.local user.email "you@example.com"
 ```
 
-Update the `[user]` section:
-
-```ini
-[user]
-    name = Your Name
-    email = your@email.com
-```
+Do this before running `install_arch.sh` (fast path step 8). Don't put them in `~/dotfiles/git/.gitconfig`: that file is tracked, and every other machine would pick them up.
 
 The config includes useful aliases like `git st`, `git lg`, `git up`, and more. View all aliases with `git la`.
 
@@ -888,7 +883,7 @@ git remote -v
 git remote set-url origin git@github.com:username/repo.git
 ```
 
-**Auto-start SSH agent:** Add to `~/.bashrc`:
+**Auto-start SSH agent:** the dotfiles already do this: their `~/.zprofile` starts one agent per login, shared by every terminal. Without the dotfiles, add to `~/.bashrc`:
 
 ```bash
 if [ -z "$SSH_AUTH_SOCK" ]; then
@@ -1291,7 +1286,7 @@ Install: `sudo pacman -S tmux`
 
 Prefix: `Ctrl + A`. These keys are from the dotfiles' `~/.tmux.conf`. Stock tmux uses `Ctrl + B` as the prefix and splits with `%` (side by side) and `"` (stacked).
 
-**Learning tmux:** the dotfiles have a fuller reference and a one-week plan for getting fluent: [dotfiles `doc/tmux.md`](https://github.com/zrrbite/dotfiles/blob/master/doc/tmux.md). It's written for the Mac setup, so the ⌘ session keys are Mac-only. Its `t` command (a session named after the current folder) works on Arch too: the dotfiles' `.bashrc-arch` defines it.
+**Learning tmux:** the dotfiles have a fuller reference and a one-week plan for getting fluent: [dotfiles `doc/tmux.md`](https://github.com/zrrbite/dotfiles/blob/master/doc/tmux.md). It's written for the Mac setup, so the ⌘ session keys are Mac-only. Its `t` command (a session named after the current folder) works on Arch too: it's in the dotfiles' `zsh/.zshrc`, which Arch and the Mac share.
 
 | Shortcut | Action |
 |----------|--------|
