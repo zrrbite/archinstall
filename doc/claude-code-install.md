@@ -6,7 +6,7 @@ The standalone installer is the preferred method. It auto-updates and
 doesn't depend on Node.js/npm.
 
 ```bash
-curl -fsSL https://claude.ai/install.sh | sh
+curl -fsSL https://claude.ai/install.sh | bash
 ```
 
 This installs to `~/.local/share/claude/versions/` and symlinks
@@ -44,7 +44,7 @@ rm -f ~/.local/bin/claude
 rm -rf ~/.local/share/claude/versions
 
 # Reinstall standalone
-curl -fsSL https://claude.ai/install.sh | sh
+curl -fsSL https://claude.ai/install.sh | bash
 ```
 
 ### Why not npm?

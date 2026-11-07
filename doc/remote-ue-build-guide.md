@@ -103,6 +103,10 @@ cat ~/.ssh/id_ed25519.pub | ssh workstation "mkdir -p ~/.ssh && cat >> ~/.ssh/au
 
 On your **Arch machine**:
 
+Remote - SSH is a Microsoft extension and only works in Microsoft's build of
+VS Code. Arch's `code` package (Code - OSS) can't install it, so use the AUR
+build: `yay -S visual-studio-code-bin`.
+
 1. Open VS Code
 2. Install the **Remote - SSH** extension
 3. Press `Ctrl+Shift+P` → "Remote-SSH: Connect to Host"
