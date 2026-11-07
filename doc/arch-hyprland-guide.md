@@ -43,14 +43,17 @@ to do it all by hand instead.
    driver now, before the dotfiles
    ([Install GPU drivers](#install-gpu-drivers-instead)), then reboot.
 
-7. **Check which Hyprland you'll get:**
+7. **Check that the dotfiles match your Hyprland.** Arch has shipped
+   Hyprland 0.57 since 2026-11-03, and 0.57 no longer reads `hyprland.conf`
+   (its release notes: "remove legacy config support"). As of 2026-11-07 the
+   dotfiles' `master` still only has `hyprland.conf`; their Lua config is on
+   branch `hypr-lua`, not merged yet. So check before going on:
    ```bash
    pacman -Si hyprland | grep '^Version'
    ```
-   0.56 or older: carry on. **0.57 or newer** no longer reads the dotfiles'
-   `hyprland.conf`, and their Lua version (branch `hypr-lua`) isn't merged
-   yet, so Hyprland would start unconfigured. Check the dotfiles repo before
-   going on.
+   0.57 or newer: Hyprland only uses the dotfiles if their `master` has
+   `hypr/.config/hypr/hyprland.lua`. Without it, Hyprland starts on its own
+   example config instead.
 
 8. **Tell git who you are.** The dotfiles keep your name and email in
    `~/.gitconfig.local`, outside the shared config:
@@ -400,7 +403,7 @@ For a GUI, run `blueman-manager`.
 
 ## Part 5: Hyprland Configuration
 
-> **Reference:** See `~/dotfiles/hypr/` for a complete Nord-themed Hyprland config with hyprlock and clipboard history (still in the old `.conf` format).
+> **Reference:** See `~/dotfiles/hypr/` for a complete Nord-themed Hyprland config with hyprlock and clipboard history. On the dotfiles' `master` it's still in the old `.conf` format, which 0.57 doesn't read; the Lua port is on branch `hypr-lua`.
 
 > **Config format:** Hyprland 0.55 moved its config to Lua, in `~/.config/hypr/hyprland.lua`. The old `hyprland.conf` still loads on 0.56 with a deprecation notice, and support is removed in 0.57. If both files exist, `hyprland.lua` wins. A pre-0.55 config won't carry over as-is either: 0.53 replaced the window rule syntax, so `windowrulev2` lines are now errors.
 
