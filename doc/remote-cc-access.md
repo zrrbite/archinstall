@@ -24,7 +24,7 @@ Laptop (terminal) ─┘
 ```bash
 sudo pacman -S tailscale
 sudo systemctl enable --now tailscaled
-tailscale up
+sudo tailscale up
 ```
 
 Follow the auth URL it prints. Your machine gets a Tailscale IP
@@ -112,18 +112,26 @@ working directory, everything.
 ## Step 5: Prevent suspend during remote sessions
 
 Your hypridle suspends the system after 30 minutes of idle. This kills
-SSH connections. Two options:
+SSH connections. Three options:
 
 ### Option A: Inhibit sleep for a session
 
-Before starting a remote-accessible session:
+Start the session with the inhibitor running *inside* it, around its shell:
 
 ```bash
-systemd-inhibit --what=idle:sleep --who="claude" --why="Remote CC session" tmux new -s claude
+tmux new -s claude 'systemd-inhibit --what=sleep --who=claude --why="Remote CC session" $SHELL'
 ```
 
-This prevents suspend as long as the tmux session is running. When you
-kill the session, normal suspend behavior resumes.
+The machine won't suspend for as long as that shell runs, including after
+you detach. Exit the shell or kill the session and normal suspend comes
+back. hypridle still locks the screen and turns it off; only the suspend is
+blocked (it runs `systemctl suspend`, which refuses while the inhibitor is
+held).
+
+Don't put `systemd-inhibit` in front of `tmux`
+(`systemd-inhibit ... tmux new -s claude`). That holds the lock only as long
+as the tmux *client* runs, and the client exits when you detach, which is
+exactly when you leave.
 
 ### Option B: Caffeine toggle
 
@@ -141,11 +149,13 @@ else
 fi
 ```
 
-Make it executable and bind it in Hyprland:
+Make it executable (`chmod +x ~/.local/bin/caffeine-toggle`) and bind it
+in Hyprland. `Super+Shift+I` is free in the dotfiles (`Super+Shift+C` is
+their screenshot-to-clipboard):
 
-```conf
-# hyprland.conf
-bind = $mainMod SHIFT, C, exec, ~/.local/bin/caffeine-toggle
+```lua
+-- hyprland.lua
+hl.bind(mainMod .. " + SHIFT + I", hl.dsp.exec_cmd("~/.local/bin/caffeine-toggle"))
 ```
 
 ### Option C: Wake-on-LAN
@@ -154,12 +164,18 @@ If the machine does suspend, wake it remotely. Requires WoL enabled
 in BIOS and on your network interface:
 
 ```bash
-# On your Arch box (one-time setup)
-sudo ethtool -s enp0s31f6 wol g
+# On your Arch box (one-time setup; NetworkManager keeps it across reboots)
+nmcli connection show                    # find the wired connection's name
+sudo nmcli connection modify "Wired connection 1" 802-3-ethernet.wake-on-lan magic
+sudo nmcli connection up "Wired connection 1"
+ip link                                  # the MAC address is after link/ether
 
 # From another device on the same LAN (or via Tailscale subnet router)
-wol AA:BB:CC:DD:EE:FF
+wakeonlan AA:BB:CC:DD:EE:FF              # on the Mac: brew install wakeonlan
 ```
+
+(`ethtool -s <interface> wol g` turns it on too, but only until the next
+reboot.)
 
 Note: WoL only works over LAN, not over Tailscale directly. You'd need
 a device on the same LAN (e.g. a Raspberry Pi) to send the WoL packet,
@@ -198,9 +214,8 @@ tmux attach -t claude
 ## Quick start
 
 ```bash
-# On your Arch box — start a persistent CC session
-systemd-inhibit --what=idle:sleep --who="claude" --why="Remote session" \
-    tmux new -s claude -d
+# On your Arch box: a detached session that blocks suspend while it runs
+tmux new -d -s claude 'systemd-inhibit --what=sleep --who=claude --why="Remote CC session" $SHELL'
 tmux send-keys -t claude "claude" Enter
 
 # From anywhere
